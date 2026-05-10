@@ -19,17 +19,22 @@ const headers = {
 app.get('/api/:table', async (req, res) => {
   try {
     const { table } = req.params;
-    const params = new URLSearchParams(req.query).toString();
-    const url = `${SB_URL}/rest/v1/${encodeURIComponent(table)}${params ? '?'+params : '?select=*'}`;
+    const url = `${SB_URL}/rest/v1/${table}?select=*`;
     const r = await fetch(url, { headers });
     const data = await r.json();
-    // Devolver en formato compatible con el HTML actual
-    res.json({ records: Array.isArray(data) ? data.map(row => ({ id: row.id, fields: row })) : [] });
+    console.log('Supabase response for', table, ':', JSON.stringify(data).substring(0, 200));
+    if (!Array.isArray(data)) {
+      console.error('Error de Supabase:', data);
+      return res.status(500).json({ error: data });
+    }
+    res.json({
+      records: data.map(row => ({ id: row.id, fields: row }))
+    });
   } catch(e) {
+    console.error(e);
     res.status(500).json({ error: e.message });
   }
 });
-
 // ── POST: crear registro ──────────────────────────────────
 app.post('/api/:table', async (req, res) => {
   try {
